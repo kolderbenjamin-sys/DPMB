@@ -1,4 +1,8 @@
 {
+  "name": "dpmb-odjezdova-tabule",
+  "version": "1.0.0",
+  "description": "DPMB Brno – digitální odjezdová tabule (GTFS)",
+  "engines": { "node": ">=18" },
   "dependencies": {
     "unzipper": "^0.12.3"
   }

@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPMB – Odjezdová tabule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Pacifico&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --pink:        #FF85B3;
+    --pink-deep:   #E8417A;
+    --pink-soft:   #FFD6E8;
+    --pink-pale:   #FFF0F7;
+    --pink-dim:    #C4607F;
+    --bg:          #FFF0F7;
+    --bg2:         #FFE4F2;
+    --bg3:         #FFDAED;
+    --sep:         #F7BDD8;
+    --white:       #FFFFFF;
+    --text:        #7A2048;
+    --text-light:  #C4607F;
+    --green:       #5DC989;
+    --red:         #FF4488;
+    --yellow:      #FFB347;
+    --tram:        #FF4488;
+    --bus:         #A066CC;
+    --trol:        #4DBDE8;
+    --night:       #7B5EA7;
+    --font-body:   'Quicksand', sans-serif;
+    --font-display:'Pacifico', cursive;
+    --bow-pink:    #FF85B3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 600;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,133,179,0.18) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(232,65,122,0.12) 0%, transparent 40%),
+      url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='4' r='1.5' fill='%23FFB6D0' opacity='0.5'/%3E%3Ccircle cx='20' cy='12' r='1' fill='%23FF85B3' opacity='0.3'/%3E%3Ccircle cx='36' cy='4' r='1.5' fill='%23FFB6D0' opacity='0.5'/%3E%3Ccircle cx='12' cy='28' r='1' fill='%23FF85B3' opacity='0.3'/%3E%3Ccircle cx='28' cy='36' r='1.5' fill='%23FFB6D0' opacity='0.4'/%3E%3C/svg%3E");
+  }
+
+  /* Floating hearts background animation */
+  body::before {
+    content: '♡ ♡ ♡ ♡ ♡ ♡ ♡ ♡ ♡ ♡ ♡ ♡';
+    position: fixed;
+    top: -20px; left: 0; right: 0;
+    font-size: 1.2rem;
+    color: rgba(255,133,179,0.15);
+    letter-spacing: 60px;
+    white-space: nowrap;
+    animation: floatHearts 18s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes floatHearts {
+    from { transform: translateY(-30px); opacity: 0.3; }
+    to   { transform: translateY(110vh); opacity: 0; }
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #FF85B3 0%, #FF5C9D 50%, #E8417A 100%);
+    border-bottom: 3px solid var(--pink-deep);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(232,65,122,0.35), 0 2px 8px rgba(255,133,179,0.3);
+  }
+
+  /* bow decoration on header */
+  .header::after {
+    content: '';
+    position: absolute;
+    top: -6px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 12px;
+    background: radial-gradient(ellipse 28px 12px at 15px 6px, #FFD6E8 60%, transparent 61%),
+                radial-gradient(ellipse 28px 12px at 45px 6px, #FFD6E8 60%, transparent 61%),
+                radial-gradient(circle 5px at 30px 6px, #FF85B3 70%, transparent 71%);
+    pointer-events: none;
+  }
+
+  .logo-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+
+  .logo-dpmb {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(180,0,80,0.4), 0 0 20px rgba(255,255,255,0.3);
+    letter-spacing: 2px;
+  }
+
+  /* Hello Kitty face SVG inline as pseudo or just emoji */
+  .logo-dpmb::before {
+    content: '🎀 ';
+    font-size: 1.1rem;
+  }
+
+  .logo-sub {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 3px;
+    font-family: var(--font-body);
+  }
+
+  .header-divider {
+    width: 2px;
+    height: 40px;
+    background: rgba(255,255,255,0.35);
+    flex-shrink: 0;
+    border-radius: 2px;
+  }
+
+  .search-wrapper {
+    flex: 1;
+    min-width: 200px;
+    max-width: 420px;
+    position: relative;
+  }
+
+  .search-wrapper input {
+    width: 100%;
+    background: rgba(255,255,255,0.92);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 999px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 8px 16px 8px 38px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-wrapper input::placeholder { color: var(--pink-dim); }
+
+  .search-wrapper input:focus {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.4);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pink-dim);
+    font-size: 1rem;
+    pointer-events: none;
+  }
+
+  .autocomplete-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 2px solid var(--sep);
+    border-radius: 16px;
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 200;
+    display: none;
+    box-shadow: 0 8px 24px rgba(232,65,122,0.15);
+    overflow: hidden;
+  }
+
+  .autocomplete-list.open { display: block; }
+
+  .autocomplete-item {
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--sep);
+    transition: background 0.15s;
+    font-family: var(--font-body);
+    font-weight: 600;
+  }
+
+  .autocomplete-item:last-child { border-bottom: none; }
+
+  .autocomplete-item:hover,
+  .autocomplete-item.active {
+    background: var(--bg2);
+    color: var(--pink-deep);
+  }
+
+  .header-clock {
+    margin-left: auto;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .clock-time {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(180,0,80,0.4);
+    letter-spacing: 2px;
+  }
+
+  .clock-date {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 2px;
+    text-align: right;
+    font-family: var(--font-body);
+  }
+
+  /* ── STATION TITLE ── */
+  .station-banner {
+    background: var(--bg2);
+    border-bottom: 2px solid var(--sep);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .station-label {
+    font-size: 0.6rem;
+    color: var(--text-light);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: var(--font-body);
+  }
+
+  .station-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--pink-deep);
+    letter-spacing: 1px;
+    animation: bounce 3s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+  }
+
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .status-dot.loading { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .status-dot.error   { background: var(--red);    box-shadow: 0 0 8px var(--red); animation: none; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .refresh-label {
+    font-size: 0.6rem;
+    color: var(--text-light);
+    letter-spacing: 1px;
+    font-family: var(--font-body);
+  }
+
+  /* ── TABLE HEADER ── */
+  .table-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 110px;
+    gap: 0;
+    background: linear-gradient(90deg, #FFD6E8, #FFC2DB, #FFD6E8);
+    border-bottom: 2px solid var(--sep);
+    padding: 8px 20px;
+  }
+
+  @media (max-width: 480px) {
+    .table-header { grid-template-columns: 60px 1fr 80px; padding: 8px 10px; }
+  }
+
+  .col-header {
+    font-size: 0.6rem;
+    color: var(--pink-deep);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-weight: 700;
+  }
+
+  .col-header:last-child { text-align: right; }
+
+  /* ── DEPARTURE ROWS ── */
+  .departures-list { padding: 0 0 20px; }
+
+  .departure-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 110px;
+    gap: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--sep);
+    align-items: center;
+    min-height: 54px;
+    transition: background 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+    animation: rowIn 0.4s ease both;
+    background: var(--white);
+  }
+
+  @media (max-width: 480px) {
+    .departure-row { grid-template-columns: 60px 1fr 80px; padding: 0 10px; }
+  }
+
+  /* alternating rows */
+  .departure-row:nth-child(even) { background: var(--pink-pale); }
+
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .departure-row:hover {
+    background: var(--bg2) !important;
+    transform: translateX(3px);
+  }
+
+  /* left bow stripe */
+  .departure-row::before {
+    content: '🎀';
+    position: absolute;
+    left: -22px;
+    top: 50%; transform: translateY(-50%);
+    font-size: 0.9rem;
+    transition: left 0.2s;
+  }
+
+  .departure-row:hover::before { left: 4px; }
+
+  /* line number badge */
+  .line-num {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 400;
+    letter-spacing: 1px;
+    padding: 4px 0;
+    display: inline-block;
+  }
+
+  .line-tram  { color: var(--tram); }
+  .line-bus   { color: var(--bus); }
+  .line-trol  { color: var(--trol); }
+  .line-night { color: var(--night); }
+
+  .destination {
+    font-size: 0.95rem;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-body);
+    font-weight: 600;
+  }
+
+  @media (max-width: 400px) {
+    .destination { font-size: 0.82rem; }
+  }
+
+  .time-cell {
+    text-align: right;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+
+  .time-now {
+    color: var(--red);
+    animation: blinkNow 0.8s step-end infinite;
+    font-size: 0.65rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes blinkNow {
+    0%,49% { opacity: 1; }
+    50%,100% { opacity: 0.2; }
+  }
+
+  .time-soon { color: #E8417A; }
+  .time-normal { color: var(--pink-deep); }
+
+  /* ── EMPTY / ERROR / LOADING STATES ── */
+  .state-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .state-icon { font-size: 3.5rem; }
+
+  .state-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--pink-deep);
+    letter-spacing: 1px;
+  }
+
+  .state-sub {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    max-width: 380px;
+    line-height: 1.6;
+    font-family: var(--font-body);
+  }
+
+  .loading-bar {
+    width: 200px;
+    height: 4px;
+    background: var(--sep);
+    overflow: hidden;
+    position: relative;
+    border-radius: 99px;
+  }
+
+  .loading-bar::after {
+    content: '';
+    position: absolute;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--pink), transparent);
+    animation: loadSlide 1.2s ease-in-out infinite;
+    border-radius: 99px;
+  }
+
+  @keyframes loadSlide {
+    from { left: -40%; }
+    to   { left: 100%; }
+  }
+
+  /* ── REFRESH PROGRESS ── */
+  .refresh-bar {
+    height: 3px;
+    background: var(--sep);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .refresh-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pink), var(--pink-deep));
+    width: 0%;
+    transition: width linear;
+    box-shadow: 0 0 8px rgba(232,65,122,0.4);
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 2px solid var(--sep);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg2);
+  }
+
+  .footer-info {
+    font-size: 0.6rem;
+    color: var(--text-light);
+    letter-spacing: 1px;
+    font-family: var(--font-body);
+  }
+
+  .footer-info a { color: var(--pink-deep); text-decoration: none; }
+
+  /* ── NOTICE ── */
+  .cors-notice {
+    background: rgba(255,133,179,0.1);
+    border: 1px solid var(--sep);
+    border-left: 4px solid var(--pink);
+    margin: 12px 20px;
+    padding: 10px 14px;
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 1.7;
+    display: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+  }
+
+  .cors-notice.show { display: block; }
+
+  .cors-notice code {
+    background: var(--bg2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--pink-deep);
+    font-family: monospace;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--pink-deep); }
+
+  /* kitty header pattern */
+  .led-bg {
+    background-image: none;
+  }
+
+  /* Hello Kitty face decorations scattered */
+  @keyframes starFloat {
+    0%,100% { transform: rotate(0deg) scale(1); }
+    50%      { transform: rotate(10deg) scale(1.1); }
+  }
+  /* ── THEME SWITCHER ── */
+  .theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .theme-opt {
+    font-size: 1.4rem;
+    transition: transform 0.2s, filter 0.2s;
+    line-height: 1;
+  }
+
+  .theme-switcher:hover .theme-opt { transform: scale(1.15); }
+
+  .theme-track {
+    width: 44px;
+    height: 24px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.3);
+    border: 2px solid rgba(255,255,255,0.5);
+    position: relative;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .theme-thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.3s cubic-bezier(.68,-.55,.27,1.55);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  /* pink theme active = thumb right */
+  body.theme-pink .theme-thumb { left: 22px; }
+  body.theme-pink .theme-track { background: rgba(255,182,220,0.5); }
+
+  /* ── DARK THEME OVERRIDES ── */
+  body.theme-dark {
+    background: #0a0a0a;
+    color: #FF8C00;
+    background-image: none;
+  }
+
+  body.theme-dark::before {
+    content: '';
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+    );
+    z-index: 9999;
+    font-size: 0;
+    letter-spacing: 0;
+    animation: none;
+    color: transparent;
+  }
+
+  body.theme-dark .header {
+    background: #111111;
+    border-bottom-color: #8B4500;
+    box-shadow: 0 4px 20px rgba(255,140,0,0.15);
+  }
+
+  body.theme-dark .header::after { display: none; }
+
+  body.theme-dark .logo-dpmb {
+    color: #FFB347;
+    text-shadow: 0 0 8px #FF8C00, 0 0 20px #8B4500, 0 0 40px rgba(255,140,0,0.3);
+    font-family: 'Orbitron', monospace;
+  }
+
+  body.theme-dark .logo-dpmb::before { content: ''; }
+
+  body.theme-dark .logo-sub { color: #8B4500; font-family: 'Share Tech Mono', monospace; }
+
+  body.theme-dark .header-divider { background: #8B4500; border-radius: 0; }
+
+  body.theme-dark .search-wrapper input {
+    background: #161616;
+    border: 1px solid #8B4500;
+    border-radius: 0;
+    color: #FFB347;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  body.theme-dark .search-wrapper input:focus {
+    border-color: #FF8C00;
+    box-shadow: 0 0 12px rgba(255,140,0,0.4);
+  }
+
+  body.theme-dark .search-wrapper input::placeholder { color: #8B4500; }
+
+  body.theme-dark .autocomplete-list {
+    background: #111111;
+    border-color: #8B4500;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.theme-dark .autocomplete-item { border-bottom-color: #2a1a00; font-family: 'Share Tech Mono', monospace; }
+  body.theme-dark .autocomplete-item:hover, body.theme-dark .autocomplete-item.active {
+    background: rgba(255,140,0,0.12); color: #FFB347;
+  }
+
+  body.theme-dark .clock-time {
+    color: #FFB347;
+    text-shadow: 0 0 10px #FF8C00, 0 0 30px rgba(255,140,0,0.4);
+    font-family: 'Orbitron', monospace;
+  }
+
+  body.theme-dark .clock-date { color: #8B4500; font-family: 'Share Tech Mono', monospace; }
+
+  body.theme-dark .station-banner { background: linear-gradient(90deg,#111,#161616,#111); border-bottom-color: #8B4500; }
+  body.theme-dark .station-label { color: #8B4500; }
+  body.theme-dark .station-name {
+    color: #FFB347;
+    text-shadow: 0 0 12px #FF8C00;
+    font-family: 'Orbitron', monospace;
+    animation: textFlicker 8s infinite;
+  }
+
+  @keyframes textFlicker {
+    0%,96%,98%,100% { opacity:1; }
+    97% { opacity:0.85; }
+    99% { opacity:0.92; }
+  }
+
+  body.theme-dark .refresh-label { color: #8B4500; font-family: 'Share Tech Mono', monospace; }
+
+  body.theme-dark .table-header { background: #111111; border-bottom-color: #FF8C00; }
+  body.theme-dark .col-header { color: #8B4500; font-family: 'Share Tech Mono', monospace; }
+
+  body.theme-dark .departure-row { background: #0a0a0a; border-bottom-color: #2a1a00; }
+  body.theme-dark .departure-row:nth-child(even) { background: #0d0d0d; }
+  body.theme-dark .departure-row:hover { background: rgba(255,140,0,0.04) !important; transform: none; }
+  body.theme-dark .departure-row::before { content:''; background: #8B4500; opacity:0; font-size:0; left:0; top:20%; bottom:20%; width:3px; }
+  body.theme-dark .departure-row:hover::before { opacity:1; left:0; }
+
+  body.theme-dark .line-num { font-family: 'Orbitron', monospace; }
+  body.theme-dark .line-tram  { color: #FF6600; text-shadow: 0 0 8px rgba(255,102,0,0.7); }
+  body.theme-dark .line-bus   { color: #FFB347; text-shadow: 0 0 8px rgba(255,180,0,0.6); }
+  body.theme-dark .line-trol  { color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.6); }
+  body.theme-dark .line-night { color: #AA88FF; text-shadow: 0 0 8px rgba(170,136,255,0.6); }
+
+  body.theme-dark .destination { color: #FF8C00; font-family: 'Share Tech Mono', monospace; }
+
+  body.theme-dark .time-cell { font-family: 'Orbitron', monospace; }
+  body.theme-dark .time-now  { color: #FF3333; text-shadow: 0 0 10px #FF3333; font-family: 'Share Tech Mono', monospace; }
+  body.theme-dark .time-soon { color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.7); }
+  body.theme-dark .time-normal { color: #FFB347; text-shadow: 0 0 6px rgba(255,140,0,0.5); }
+
+  body.theme-dark .refresh-bar { background: #2a1a00; }
+  body.theme-dark .refresh-fill { background: linear-gradient(90deg, #8B4500, #FF8C00); box-shadow: 0 0 8px #8B4500; }
+
+  body.theme-dark .state-title { font-family: 'Orbitron', monospace; color: #8B4500; }
+  body.theme-dark .state-sub   { color: #4a3000; font-family: 'Share Tech Mono', monospace; }
+  body.theme-dark .loading-bar { background: #2a1a00; border-radius:0; }
+  body.theme-dark .loading-bar::after { background: linear-gradient(90deg,transparent,#FF8C00,transparent); border-radius:0; }
+
+  body.theme-dark .footer { background: #0a0a0a; border-top-color: #2a1a00; }
+  body.theme-dark .footer-info { color: #3a2000; }
+
+  body.theme-dark .cors-notice { background: rgba(255,60,0,0.08); border-color: #5a2000; border-left-color: #FF8C00; color: #cc6600; border-radius: 0; }
+  body.theme-dark .cors-notice code { background: rgba(255,140,0,0.1); color: #FFB347; }
+
+  body.theme-dark ::-webkit-scrollbar-track { background: #0a0a0a; }
+  body.theme-dark ::-webkit-scrollbar-thumb { background: #8B4500; border-radius: 0; }
+  body.theme-dark ::-webkit-scrollbar-thumb:hover { background: #FF8C00; }
+
+  body.theme-dark .theme-track { background: rgba(255,140,0,0.2); border-color: rgba(255,140,0,0.4); }
+  body.theme-dark .theme-thumb { background: #FFB347; }
+  body.theme-dark .led-bg { background-image: radial-gradient(circle, rgba(255,140,0,0.08) 1px, transparent 1px); background-size: 6px 6px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header led-bg">
+  <div class="logo-block">
+    <span class="logo-dpmb">DPMB</span>
+    <span class="logo-sub">Dopravní podnik města Brna</span>
+  </div>
+  <div class="header-divider"></div>
+  <div class="search-wrapper">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="stopInput" placeholder="Zadejte zastávku…" autocomplete="off" spellcheck="false">
+    <div class="autocomplete-list" id="autocompleteList"></div>
+  </div>
+  <div class="theme-switcher" id="themeSwitcher">
+    <span class="theme-opt" id="themeOptDark">👨</span>
+    <span class="theme-track" id="themeTrack"><span class="theme-thumb" id="themeThumb"></span></span>
+    <span class="theme-opt" id="themeOptPink">👩</span>
+  </div>
+  <div class="header-clock">
+    <div class="clock-time" id="clockTime">--:--:--</div>
+    <div class="clock-date" id="clockDate">--.--.----</div>
+  </div>
+</header>
+
+<!-- STATION BANNER -->
+<div class="station-banner" id="stationBanner" style="display:none">
+  <div>
+    <div class="station-label">Zastávka</div>
+    <div class="station-name" id="stationNameDisplay">—</div>
+  </div>
+  <div class="refresh-label" id="refreshLabel">Obnoví se za 30 s</div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<!-- REFRESH PROGRESS -->
+<div class="refresh-bar"><div class="refresh-fill" id="refreshFill"></div></div>
+
+<!-- CORS NOTICE -->
+<div class="cors-notice" id="corsNotice">
+  <strong>⚠ Server není spuštěn:</strong> Aplikace zobrazuje záložní data.
+  Spusť <code>node server.js</code> v terminálu ve složce kde máš soubory,
+  pak otevři <code>http://localhost:3000</code> v prohlížeči pro reálná GTFS data.
+</div>
+
+<!-- MAIN CONTENT -->
+<main id="mainContent">
+  <div class="state-screen" id="welcomeScreen">
+    <div class="state-icon">🎀</div>
+    <div class="state-title">Odjezdová tabule DPMB Brno</div>
+    <div class="state-sub">Zadejte název zastávky do vyhledávacího pole výše a stiskněte Enter nebo vyberte ze seznamu. ♡</div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span class="footer-info">🎀 DPMB – Odjezdová tabule &copy; 2025 | Data: IDS JMK / DPMB</span>
+  <span class="footer-info">♡ Automatická obnova každých 30 s ♡</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const REFRESH_INTERVAL = 30000; // 30 s
+const LOCAL_API = '/api';
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentStop = null;
+let refreshTimer = null;
+let progressTimer = null;
+let progressStart = null;
+let departures = [];
+let gtfsMode = false; // true = real GTFS data
+
+// ═══════════════════════════════════════════════════════
+// GTFS TYPE DETECTION
+// ═══════════════════════════════════════════════════════
+function guessType(line, routeType) {
+  // GTFS route_type: 0=tram, 3=bus, 11=trol, 800=trol
+  if (routeType === 0  || routeType === '0')  return 'tram';
+  if (routeType === 11 || routeType === '11') return 'trol';
+  if (routeType === 800|| routeType === '800')return 'trol';
+  const l = String(line);
+  if (l.startsWith('N')) return 'night';
+  const n = parseInt(l);
+  if (n >= 1  && n <= 20) return 'tram';
+  if (n >= 25 && n <= 39) return 'trol';
+  return 'bus';
+}
+
+// ═══════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('cs-CZ', { hour12: false });
+  const d = now.toLocaleDateString('cs-CZ', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+  document.getElementById('clockTime').textContent = t;
+  document.getElementById('clockDate').textContent = d.toUpperCase();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════
+// REFRESH PROGRESS BAR
+// ═══════════════════════════════════════════════════════
+function startProgressBar() {
+  const fill = document.getElementById('refreshFill');
+  progressStart = Date.now();
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${REFRESH_INTERVAL}ms linear`;
+    fill.style.width = '100%';
+  });
+}
+
+function updateRefreshLabel(remaining) {
+  const lbl = document.getElementById('refreshLabel');
+  if (lbl) lbl.textContent = `Obnoví se za ${Math.ceil(remaining/1000)} s`;
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETE FROM SERVER
+// ═══════════════════════════════════════════════════════
+async function fetchStopSuggestions(query) {
+  try {
+    const resp = await fetch(`${LOCAL_API}/stops?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(3000) });
+    if (!resp.ok) throw new Error('no server');
+    return await resp.json(); // [{id, name}, ...]
+  } catch {
+    // fallback: filter hardcoded list
+    const q = query.toLowerCase();
+    return FALLBACK_STOPS.filter(s => s.name.toLowerCase().includes(q)).slice(0, 10);
+  }
+}
+
+// Small fallback list if server not running
+const FALLBACK_STOPS = [
+  { name: 'Hlavní nádraží' }, { name: 'Česká' }, { name: 'Náměstí Svobody' },
+  { name: 'Mendlovo náměstí' }, { name: 'Konečného náměstí' }, { name: 'Moravské náměstí' },
+  { name: 'Husova' }, { name: 'Joštova' }, { name: 'Tivoli' }, { name: 'Úzká' },
+  { name: 'Komárov' }, { name: 'Vídeňská' }, { name: 'Bohunice' }, { name: 'Bystrc' },
+  { name: 'Líšeň' }, { name: 'Královo Pole' }, { name: 'Řečkovice' }, { name: 'Lesná' },
+  { name: 'Slatina' }, { name: 'Starý Lískovec' }, { name: 'Nový Lískovec' },
+  { name: 'Technologický park' }, { name: 'Semilasso' }, { name: 'Cejl' }, { name: 'Bratislavská' },
+];
+
+// ═══════════════════════════════════════════════════════
+// FETCH DATA
+// ═══════════════════════════════════════════════════════
+async function fetchDepartures(stop) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot loading';
+
+  try {
+    const resp = await fetch(
+      `${LOCAL_API}/departures?stop=${encodeURIComponent(stop.name)}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    gtfsMode = true;
+    dot.className = 'status-dot';
+    document.getElementById('corsNotice').classList.remove('show');
+    return parseGTFSResponse(data);
+  } catch (e) {
+    gtfsMode = false;
+    dot.className = 'status-dot error';
+    document.getElementById('corsNotice').classList.add('show');
+    return generateFallbackDepartures(stop.name);
+  }
+}
+
+function parseGTFSResponse(data) {
+  const now = new Date();
+  return (data.departures || []).map(d => {
+    const depTime = new Date(now);
+    depTime.setHours(Math.floor(d.depMin / 60), d.depMin % 60, 0, 0);
+    // Handle >24h times (GTFS allows e.g. 25:00)
+    if (d.depMin >= 24 * 60) depTime.setDate(depTime.getDate() + 1);
+    return {
+      line: d.line,
+      dest: d.dest,
+      type: guessType(d.line, d.routeType),
+      depTime,
+      minsLeft: d.minsLeft,
+    };
+  });
+}
+
+function generateFallbackDepartures(stopName) {
+  // Minimal fallback simulation
+  const now = new Date();
+  const lines = [
+    { line:'1', dest:'Řečkovice', type:'tram' },
+    { line:'2', dest:'Starý Lískovec', type:'tram' },
+    { line:'4', dest:'Lesná', type:'tram' },
+    { line:'44', dest:'Modřice', type:'bus' },
+    { line:'30', dest:'Bystrc', type:'trol' },
+  ];
+  const deps = [];
+  lines.forEach(r => {
+    let offset = Math.floor(Math.random() * 5);
+    for (let i = 0; i < 3; i++) {
+      deps.push({ ...r, depTime: new Date(now.getTime() + offset * 60000), minsLeft: offset });
+      offset += Math.floor(Math.random() * 8) + 4;
+    }
+  });
+  return deps.sort((a, b) => a.depTime - b.depTime).slice(0, 16);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderDepartures(deps, stopName) {
+  const main = document.getElementById('mainContent');
+
+  if (!deps || deps.length === 0) {
+    main.innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">🚫</div>
+        <div class="state-title">Žádné odjezdy</div>
+        <div class="state-sub">Pro zastávku <strong>${stopName}</strong> nebyly nalezeny žádné aktuální odjezdy.</div>
+      </div>`;
+    return;
+  }
+
+  let html = `
+    <div class="table-header">
+      <span class="col-header">Linka</span>
+      <span class="col-header">Směr</span>
+      <span class="col-header" style="text-align:right">Odjezd</span>
+    </div>
+    <div class="departures-list">`;
+
+  const now = new Date();
+
+  deps.forEach((dep, i) => {
+    const mins = Math.round((dep.depTime - now) / 60000);
+    let timeHtml, timeClass;
+
+    if (mins <= 0) {
+      timeHtml = '&#x25BA;&nbsp;ODJÍŽDÍ';
+      timeClass = 'time-cell time-now';
+    } else if (mins <= 2) {
+      timeHtml = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      timeClass = 'time-cell time-soon';
+    } else {
+      timeHtml = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      timeClass = 'time-cell time-normal';
+    }
+
+    const lineClass = `line-num line-${dep.type}`;
+    const delay = (i * 0.05).toFixed(2);
+
+    html += `
+      <div class="departure-row" style="animation-delay:${delay}s">
+        <div class="${lineClass}">${dep.line}</div>
+        <div class="destination" title="${dep.dest}">${dep.dest}</div>
+        <div class="${timeClass}">${timeHtml}</div>
+      </div>`;
+  });
+
+  html += `</div>`;
+  if (!gtfsMode) {
+    html += `<div style="padding:8px 20px;font-size:0.6rem;color:#4a2a00;letter-spacing:1px">
+      ◈ ZÁLOŽNÍ DATA – Spusť server.js pro načtení reálných jízdních řádů GTFS
+    </div>`;
+  }
+
+  main.innerHTML = html;
+}
+
+function updateCountdowns() {
+  if (!currentStop || departures.length === 0) return;
+  const now = new Date();
+  const cells = document.querySelectorAll('.time-cell');
+  cells.forEach((cell, i) => {
+    if (i >= departures.length) return;
+    const dep = departures[i];
+    const mins = Math.round((dep.depTime - now) / 60000);
+    if (mins <= 0) {
+      cell.innerHTML = '&#x25BA;&nbsp;ODJÍŽDÍ';
+      cell.className = 'time-cell time-now';
+    } else if (mins <= 2) {
+      cell.innerHTML = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      cell.className = 'time-cell time-soon';
+    } else {
+      cell.innerHTML = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      cell.className = 'time-cell time-normal';
+    }
+  });
+
+  // remove rows that are way past
+  departures = departures.filter(d => Math.round((d.depTime - now) / 60000) > -2);
+}
+setInterval(updateCountdowns, 10000);
+
+// ═══════════════════════════════════════════════════════
+// LOAD STOP
+// ═══════════════════════════════════════════════════════
+async function loadStop(stop) {
+  currentStop = stop;
+
+  // show banner
+  document.getElementById('stationBanner').style.display = 'flex';
+  document.getElementById('stationNameDisplay').textContent = stop.name;
+  document.getElementById('stopInput').value = stop.name;
+
+  // loading state
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="state-screen">
+      <div class="state-icon">🎀</div>
+      <div class="state-title">Načítám odjezdy…</div>
+      <div class="loading-bar"></div>
+      <div class="state-sub">${stop.name}</div>
+    </div>`;
+
+  departures = await fetchDepartures(stop);
+  renderDepartures(departures, stop.name);
+
+  // clear old timer
+  clearInterval(refreshTimer);
+  startProgressBar();
+
+  let elapsed = 0;
+  const step = 1000;
+  refreshTimer = setInterval(async () => {
+    elapsed += step;
+    const remaining = REFRESH_INTERVAL - elapsed;
+    updateRefreshLabel(remaining);
+    if (elapsed >= REFRESH_INTERVAL) {
+      elapsed = 0;
+      startProgressBar();
+      departures = await fetchDepartures(currentStop);
+      renderDepartures(departures, currentStop.name);
+    }
+  }, step);
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════
+const stopInput = document.getElementById('stopInput');
+const autoList  = document.getElementById('autocompleteList');
+let acIndex = -1;
+let acItems = [];
+
+stopInput.addEventListener('input', async () => {
+  const val = stopInput.value.trim();
+  autoList.innerHTML = '';
+  acIndex = -1;
+  if (val.length < 2) { autoList.classList.remove('open'); return; }
+
+  acItems = await fetchStopSuggestions(val);
+  if (acItems.length === 0) { autoList.classList.remove('open'); return; }
+
+  acItems.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'autocomplete-item';
+    div.textContent = s.name;
+    div.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      selectStop(s);
+    });
+    autoList.appendChild(div);
+  });
+  autoList.classList.add('open');
+});
+
+stopInput.addEventListener('keydown', (e) => {
+  const items = autoList.querySelectorAll('.autocomplete-item');
+  if (e.key === 'ArrowDown') {
+    acIndex = Math.min(acIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    acIndex = Math.max(acIndex - 1, -1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    if (acIndex >= 0 && acItems[acIndex]) {
+      selectStop(acItems[acIndex]);
+    } else {
+      // fuzzy match
+      const val = stopInput.value.trim().toLowerCase();
+      const match = BRNO_STOPS.find(s => s.name.toLowerCase().includes(val));
+      if (match) selectStop(match);
+      else if (val.length > 2) {
+        // create ad-hoc stop from input
+        selectStop({ name: stopInput.value.trim(), id: 'UNKNOWN' });
+      }
+    }
+  } else if (e.key === 'Escape') {
+    autoList.classList.remove('open');
+  }
+});
+
+stopInput.addEventListener('blur', () => {
+  setTimeout(() => autoList.classList.remove('open'), 150);
+});
+
+function selectStop(stop) {
+  stopInput.value = stop.name;
+  autoList.classList.remove('open');
+  acIndex = -1;
+  loadStop(stop);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT – auto-load Hlavní nádraží
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // ── THEME SWITCHER ──
+  const saved = localStorage.getItem('dpmb-theme') || 'pink';
+  applyTheme(saved);
+
+  document.getElementById('themeSwitcher').addEventListener('click', () => {
+    const current = document.body.classList.contains('theme-dark') ? 'dark' : 'pink';
+    const next = current === 'dark' ? 'pink' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('dpmb-theme', next);
+  });
+
+  setTimeout(() => loadStop({ name: 'Hlavní nádraží' }), 300);
+});
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-dark', 'theme-pink');
+  document.body.classList.add('theme-' + theme);
+}
+</script>
+</body>
+</html>
