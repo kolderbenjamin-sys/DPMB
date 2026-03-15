@@ -1,13 +1,24 @@
 /**
  * Lokální dev server – zrcadlí Vercel strukturu
  * Spuštění: node server.js
- * Otevři:   http://localhost:3000
  */
 
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+// --- OPRAVA: Zajištění existence složky C:\tmp ---
+const tempDir = 'C:\\tmp';
+if (!fs.existsSync(tempDir)) {
+  try {
+    console.log(`📁 Vytvářím chybějící složku: ${tempDir}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+  } catch (err) {
+    console.error(`❌ Nepodařilo se vytvořit složku ${tempDir}. Spusť terminál jako správce nebo změň cestu v API souborech.`);
+  }
+}
+// ------------------------------------------------
 
 // Auto-install závislosti
 if (!fs.existsSync(path.join(__dirname, 'node_modules', 'unzipper'))) {
@@ -49,7 +60,14 @@ const server = http.createServer((req, res) => {
   const filePath = path.join(__dirname, 'public', file);
   if (fs.existsSync(filePath)) {
     const ext = path.extname(filePath);
-    const mime = { '.html':'text/html;charset=utf-8', '.css':'text/css', '.js':'application/javascript', '.json':'application/json' }[ext] || 'text/plain';
+    const mime = { 
+      '.html':'text/html;charset=utf-8', 
+      '.css':'text/css', 
+      '.js':'application/javascript', 
+      '.json':'application/json',
+      '.png':'image/png',
+      '.jpg':'image/jpeg'
+    }[ext] || 'text/plain';
     res.writeHead(200, { 'Content-Type': mime });
     res.end(fs.readFileSync(filePath));
   } else {
