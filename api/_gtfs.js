@@ -135,8 +135,9 @@ function getDepartures(stopName, limit = 20) {
   if (!ids.length) return { departures: [], stopName, message: 'Zastávka nenalezena' };
 
   const now     = new Date();
-  const nowMin  = now.getHours() * 60 + now.getMinutes();
-  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const prague  = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Prague' }));
+  const nowMin  = prague.getHours() * 60 + prague.getMinutes();
+  const dateStr = `${prague.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
   const dow     = now.getDay();
 
   const results = [];
