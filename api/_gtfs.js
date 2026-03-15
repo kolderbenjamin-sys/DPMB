@@ -12,7 +12,7 @@ let gtfsData  = null;
 let loadedAt  = 0;
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hodin
 const GTFS_URL  = 'https://kordis-jmk.cz/gtfs/gtfs.zip';
-const TMP_ZIP   = '/tmp/gtfs.zip';
+const TMP_ZIP = path.join(process.platform === 'win32' ? process.cwd() : '/tmp', 'gtfs.zip');
 
 // ── Download ──────────────────────────────────────────────
 function download(url, dest) {
