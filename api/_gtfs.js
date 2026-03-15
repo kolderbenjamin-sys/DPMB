@@ -1,32 +1,21 @@
 /**
- * Sdílený GTFS loader pro Vercel serverless funkce.
- * Data se cachují v paměti instance (warm cache).
- * Vercel /tmp je dostupný pro dočasné soubory.
+ * GTFS loader – čte data/gtfs.zip přímo z repozitáře.
+ * Žádné stahování, žádný /tmp. Data jsou součástí projektu.
+ *
+ * Jak aktualizovat data:
+ *   1. Stáhni https://kordis-jmk.cz/gtfs/gtfs.zip
+ *   2. Ulož jako data/gtfs.zip (přepiš starý soubor)
+ *   3. git add data/gtfs.zip && git commit && git push
+ *   → Vercel se automaticky redeplojne s novými daty
  */
 
-const https = require('https');
-const fs    = require('fs');
-const path  = require('path');
+const fs   = require('fs');
+const path = require('path');
 
-let gtfsData  = null;
-let loadedAt  = 0;
-const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hodin
-const GTFS_URL  = 'https://kordis-jmk.cz/gtfs/gtfs.zip';
-const TMP_ZIP = path.join(process.platform === 'win32' ? process.cwd() : '/tmp', 'gtfs.zip');
+const ZIP_PATH = path.join(__dirname, '..', 'data', 'gtfs.zip');
 
-// ── Download ──────────────────────────────────────────────
-function download(url, dest) {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    https.get(url, res => {
-      if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode));
-      res.pipe(file);
-      file.on('finish', () => file.close(resolve));
-    }).on('error', err => { try { fs.unlinkSync(dest); } catch {} reject(err); });
-  });
-}
+let gtfsData = null;
 
-// ── Parse CSV ─────────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.replace(/\r/g, '').split('\n').filter(Boolean);
   if (!lines.length) return [];
@@ -47,13 +36,9 @@ function parseCSV(text) {
   return rows;
 }
 
-// ── Read ZIP via unzipper ─────────────────────────────────
 function readZip(zipPath, needed) {
   return new Promise((resolve, reject) => {
-    let unzipper;
-    try { unzipper = require('unzipper'); } catch {
-      return reject(new Error('unzipper not available'));
-    }
+    const unzipper = require('unzipper');
     const result = {}, chunks = {};
     needed.forEach(n => { chunks[n] = []; });
     fs.createReadStream(zipPath)
@@ -63,40 +48,36 @@ function readZip(zipPath, needed) {
         if (needed.includes(name)) {
           entry.on('data', d => chunks[name].push(d));
           entry.on('end', () => { result[name] = Buffer.concat(chunks[name]).toString('utf8'); });
-        } else { entry.autodrain(); }
+        } else {
+          entry.autodrain();
+        }
       })
       .on('finish', () => resolve(result))
       .on('error', reject);
   });
 }
 
-// ── Build indexes ─────────────────────────────────────────
 function buildIndexes(files) {
-  const stops      = parseCSV(files['stops.txt']          || '');
-  const routes     = parseCSV(files['routes.txt']         || '');
-  const trips      = parseCSV(files['trips.txt']          || '');
-  const stopTimes  = parseCSV(files['stop_times.txt']     || '');
-  const calendar   = parseCSV(files['calendar.txt']       || '');
-  const calDates   = parseCSV(files['calendar_dates.txt'] || '');
+  const stops     = parseCSV(files['stops.txt']          || '');
+  const routes    = parseCSV(files['routes.txt']         || '');
+  const trips     = parseCSV(files['trips.txt']          || '');
+  const stopTimes = parseCSV(files['stop_times.txt']     || '');
+  const calendar  = parseCSV(files['calendar.txt']       || '');
+  const calDates  = parseCSV(files['calendar_dates.txt'] || '');
 
   const stopsById = {};
   stops.forEach(s => { stopsById[s.stop_id] = s; });
-
   const routesById = {};
   routes.forEach(r => { routesById[r.route_id] = r; });
-
   const tripsById = {};
   trips.forEach(t => { tripsById[t.trip_id] = t; });
-
   const timesByStop = {};
   stopTimes.forEach(st => {
     if (!timesByStop[st.stop_id]) timesByStop[st.stop_id] = [];
     timesByStop[st.stop_id].push(st);
   });
-
   const calById = {};
   calendar.forEach(c => { calById[c.service_id] = c; });
-
   const calDatesByService = {};
   calDates.forEach(cd => {
     if (!calDatesByService[cd.service_id]) calDatesByService[cd.service_id] = [];
@@ -106,31 +87,25 @@ function buildIndexes(files) {
   return { stopsById, routesById, tripsById, timesByStop, calById, calDatesByService };
 }
 
-// ── Public: ensure loaded ─────────────────────────────────
 async function ensureGTFS() {
-  if (gtfsData && (Date.now() - loadedAt < CACHE_TTL)) return gtfsData;
+  if (gtfsData) return gtfsData;
 
-  const needDownload = !fs.existsSync(TMP_ZIP) ||
-    (Date.now() - fs.statSync(TMP_ZIP).mtimeMs > CACHE_TTL);
-
-  if (needDownload) {
-    console.log('[gtfs] Downloading GTFS...');
-    await download(GTFS_URL, TMP_ZIP);
-    console.log('[gtfs] Downloaded.');
+  if (!fs.existsSync(ZIP_PATH)) {
+    throw new Error(
+      'data/gtfs.zip nenalezen! Stáhni https://kordis-jmk.cz/gtfs/gtfs.zip a ulož jako data/gtfs.zip'
+    );
   }
 
-  console.log('[gtfs] Parsing...');
-  const files = await readZip(TMP_ZIP, [
-    'stops.txt','routes.txt','trips.txt',
-    'stop_times.txt','calendar.txt','calendar_dates.txt'
+  console.log('[gtfs] Parsuju data/gtfs.zip...');
+  const files = await readZip(ZIP_PATH, [
+    'stops.txt', 'routes.txt', 'trips.txt',
+    'stop_times.txt', 'calendar.txt', 'calendar_dates.txt'
   ]);
   gtfsData = buildIndexes(files);
-  loadedAt = Date.now();
-  console.log('[gtfs] Ready. Stops:', Object.keys(gtfsData.stopsById).length);
+  console.log('[gtfs] Hotovo. Zastávek:', Object.keys(gtfsData.stopsById).length);
   return gtfsData;
 }
 
-// ── Business logic ────────────────────────────────────────
 const DAY_NAMES = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
 function isActive(serviceId, dateStr, dow, data) {
@@ -159,10 +134,10 @@ function getDepartures(stopName, limit = 20) {
 
   if (!ids.length) return { departures: [], stopName, message: 'Zastávka nenalezena' };
 
-  const now    = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const now     = new Date();
+  const nowMin  = now.getHours() * 60 + now.getMinutes();
   const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const dow    = now.getDay();
+  const dow     = now.getDay();
 
   const results = [];
   for (const stopId of ids) {
@@ -186,7 +161,11 @@ function getDepartures(stopName, limit = 20) {
   return {
     departures: results
       .sort((a, b) => a.depMin - b.depMin)
-      .filter(r => { const k=`${r.line}|${r.dest}|${r.depMin}`; if(seen.has(k))return false; seen.add(k); return true; })
+      .filter(r => {
+        const k = `${r.line}|${r.dest}|${r.depMin}`;
+        if (seen.has(k)) return false;
+        seen.add(k); return true;
+      })
       .slice(0, limit),
     stopName,
   };
@@ -198,7 +177,10 @@ function searchStops(query, limit = 12) {
   const seen = new Set();
   return Object.values(gtfsData.stopsById)
     .filter(s => s.stop_name && s.stop_name.toLowerCase().normalize('NFC').includes(q))
-    .filter(s => { if(seen.has(s.stop_name))return false; seen.add(s.stop_name); return true; })
+    .filter(s => {
+      if (seen.has(s.stop_name)) return false;
+      seen.add(s.stop_name); return true;
+    })
     .slice(0, limit)
     .map(s => ({ id: s.stop_id, name: s.stop_name }));
 }

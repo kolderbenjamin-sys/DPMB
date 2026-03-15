@@ -1,5 +1,5 @@
 node_modules/
 .gtfs_cache/
-/tmp/
 .env
 .vercel/
+# data/gtfs.zip se COMMITUJE – není zde ignorováno
