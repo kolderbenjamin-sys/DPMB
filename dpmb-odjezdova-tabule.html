@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPMB – Odjezdová tabule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --orange: #FF8C00;
+    --orange-dim: #8B4500;
+    --orange-glow: #FFA500;
+    --orange-bright: #FFB347;
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #161616;
+    --sep: #2a1a00;
+    --green: #00FF7F;
+    --red: #FF3333;
+    --yellow: #FFD700;
+    --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+    --font-display: 'Orbitron', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--orange);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* CRT vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 2px solid var(--orange-dim);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(255,140,0,0.15);
+  }
+
+  .logo-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+
+  .logo-dpmb {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--orange-bright);
+    text-shadow:
+      0 0 8px var(--orange),
+      0 0 20px var(--orange-dim),
+      0 0 40px rgba(255,140,0,0.3);
+    letter-spacing: 4px;
+  }
+
+  .logo-sub {
+    font-size: 0.6rem;
+    color: var(--orange-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-divider {
+    width: 2px;
+    height: 40px;
+    background: var(--orange-dim);
+    flex-shrink: 0;
+  }
+
+  .search-wrapper {
+    flex: 1;
+    min-width: 200px;
+    max-width: 420px;
+    position: relative;
+  }
+
+  .search-wrapper input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--orange-dim);
+    color: var(--orange-bright);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    padding: 8px 12px 8px 36px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .search-wrapper input::placeholder { color: var(--orange-dim); }
+
+  .search-wrapper input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 12px rgba(255,140,0,0.4), inset 0 0 8px rgba(255,140,0,0.05);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--orange-dim);
+    font-size: 1rem;
+    pointer-events: none;
+  }
+
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--bg2);
+    border: 1px solid var(--orange-dim);
+    border-top: none;
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 200;
+    display: none;
+  }
+
+  .autocomplete-list.open { display: block; }
+
+  .autocomplete-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--sep);
+    transition: background 0.15s;
+  }
+
+  .autocomplete-item:hover,
+  .autocomplete-item.active {
+    background: rgba(255,140,0,0.12);
+    color: var(--orange-bright);
+  }
+
+  .header-clock {
+    margin-left: auto;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .clock-time {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--orange-bright);
+    text-shadow: 0 0 10px var(--orange), 0 0 30px rgba(255,140,0,0.4);
+    letter-spacing: 3px;
+  }
+
+  .clock-date {
+    font-size: 0.65rem;
+    color: var(--orange-dim);
+    letter-spacing: 2px;
+    text-align: right;
+  }
+
+  /* ── STATION TITLE ── */
+  .station-banner {
+    background: linear-gradient(90deg, var(--bg2), var(--bg3), var(--bg2));
+    border-bottom: 1px solid var(--orange-dim);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .station-label {
+    font-size: 0.65rem;
+    color: var(--orange-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .station-name {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--orange-bright);
+    text-shadow: 0 0 12px var(--orange), 0 0 25px rgba(255,140,0,0.3);
+    letter-spacing: 2px;
+    animation: textFlicker 8s infinite;
+  }
+
+  @keyframes textFlicker {
+    0%,96%,98%,100% { opacity: 1; }
+    97% { opacity: 0.85; }
+    99% { opacity: 0.92; }
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .status-dot.loading { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .status-dot.error   { background: var(--red);    box-shadow: 0 0 8px var(--red); animation: none; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .refresh-label {
+    font-size: 0.6rem;
+    color: var(--orange-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── TABLE HEADER ── */
+  .table-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px;
+    gap: 0;
+    background: var(--bg2);
+    border-bottom: 2px solid var(--orange);
+    padding: 8px 20px;
+  }
+
+  @media (max-width: 480px) {
+    .table-header { grid-template-columns: 60px 1fr 80px; padding: 8px 10px; }
+  }
+
+  .col-header {
+    font-size: 0.6rem;
+    color: var(--orange-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .col-header:last-child { text-align: right; }
+
+  /* ── DEPARTURE ROWS ── */
+  .departures-list {
+    padding: 0 0 20px;
+  }
+
+  .departure-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px;
+    gap: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--sep);
+    align-items: center;
+    min-height: 52px;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+    animation: rowIn 0.4s ease both;
+  }
+
+  @media (max-width: 480px) {
+    .departure-row { grid-template-columns: 60px 1fr 80px; padding: 0 10px; }
+  }
+
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .departure-row:hover { background: rgba(255,140,0,0.04); }
+
+  /* left accent stripe */
+  .departure-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px;
+    background: var(--orange-dim);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .departure-row:hover::before { opacity: 1; }
+
+  /* line number badge */
+  .line-num {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 0;
+  }
+
+  .line-tram  { color: #FF6600; text-shadow: 0 0 8px rgba(255,102,0,0.7); }
+  .line-bus   { color: var(--orange-bright); text-shadow: 0 0 8px rgba(255,180,0,0.6); }
+  .line-trol  { color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.6); }
+  .line-night { color: #AA88FF; text-shadow: 0 0 8px rgba(170,136,255,0.6); }
+
+  .destination {
+    font-size: 1rem;
+    color: var(--orange);
+    letter-spacing: 1px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* marquee for long names on small screens */
+  @media (max-width: 400px) {
+    .destination { font-size: 0.85rem; }
+  }
+
+  .time-cell {
+    text-align: right;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+  }
+
+  .time-now {
+    color: var(--red);
+    text-shadow: 0 0 10px var(--red);
+    animation: blinkNow 0.8s step-end infinite;
+    font-size: 0.7rem;
+  }
+
+  @keyframes blinkNow {
+    0%,49% { opacity: 1; }
+    50%,100% { opacity: 0.2; }
+  }
+
+  .time-soon {
+    color: var(--yellow);
+    text-shadow: 0 0 8px rgba(255,215,0,0.7);
+  }
+
+  .time-normal {
+    color: var(--orange-bright);
+    text-shadow: 0 0 6px rgba(255,140,0,0.5);
+  }
+
+  /* ── SEPARATOR between platform groups ── */
+  .platform-sep {
+    padding: 6px 20px;
+    background: var(--sep);
+    font-size: 0.6rem;
+    color: var(--orange-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ── EMPTY / ERROR / LOADING STATES ── */
+  .state-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .state-icon {
+    font-size: 3rem;
+    opacity: 0.4;
+  }
+
+  .state-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--orange-dim);
+    letter-spacing: 3px;
+  }
+
+  .state-sub {
+    font-size: 0.75rem;
+    color: #4a3000;
+    letter-spacing: 1px;
+    max-width: 380px;
+    line-height: 1.6;
+  }
+
+  .loading-bar {
+    width: 200px;
+    height: 3px;
+    background: var(--sep);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .loading-bar::after {
+    content: '';
+    position: absolute;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--orange), transparent);
+    animation: loadSlide 1.2s ease-in-out infinite;
+  }
+
+  @keyframes loadSlide {
+    from { left: -40%; }
+    to   { left: 100%; }
+  }
+
+  /* ── REFRESH PROGRESS ── */
+  .refresh-bar {
+    height: 2px;
+    background: var(--sep);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .refresh-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange-dim), var(--orange));
+    width: 0%;
+    transition: width linear;
+    box-shadow: 0 0 8px var(--orange-dim);
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--sep);
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .footer-info {
+    font-size: 0.6rem;
+    color: #3a2000;
+    letter-spacing: 1px;
+  }
+
+  .footer-info a {
+    color: var(--orange-dim);
+    text-decoration: none;
+  }
+
+  /* ── CORS notice ── */
+  .cors-notice {
+    background: rgba(255,60,0,0.08);
+    border: 1px solid #5a2000;
+    margin: 16px 20px;
+    padding: 12px 16px;
+    font-size: 0.72rem;
+    color: #cc6600;
+    letter-spacing: 0.5px;
+    line-height: 1.7;
+    display: none;
+  }
+
+  .cors-notice.show { display: block; }
+
+  .cors-notice code {
+    background: rgba(255,140,0,0.1);
+    padding: 1px 4px;
+    color: var(--orange-bright);
+    font-family: var(--font-mono);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--orange-dim); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+
+  /* LED dot matrix texture on header */
+  .led-bg {
+    background-image: radial-gradient(circle, rgba(255,140,0,0.08) 1px, transparent 1px);
+    background-size: 6px 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header led-bg">
+  <div class="logo-block">
+    <span class="logo-dpmb">DPMB</span>
+    <span class="logo-sub">Dopravní podnik města Brna</span>
+  </div>
+  <div class="header-divider"></div>
+  <div class="search-wrapper">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="stopInput" placeholder="Zadejte zastávku…" autocomplete="off" spellcheck="false">
+    <div class="autocomplete-list" id="autocompleteList"></div>
+  </div>
+  <div class="header-clock">
+    <div class="clock-time" id="clockTime">--:--:--</div>
+    <div class="clock-date" id="clockDate">--.--.----</div>
+  </div>
+</header>
+
+<!-- STATION BANNER -->
+<div class="station-banner" id="stationBanner" style="display:none">
+  <div>
+    <div class="station-label">Zastávka</div>
+    <div class="station-name" id="stationNameDisplay">—</div>
+  </div>
+  <div class="refresh-label" id="refreshLabel">Obnoví se za 30 s</div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<!-- REFRESH PROGRESS -->
+<div class="refresh-bar"><div class="refresh-fill" id="refreshFill"></div></div>
+
+<!-- CORS NOTICE -->
+<div class="cors-notice" id="corsNotice">
+  <strong>⚠ Server není spuštěn:</strong> Aplikace zobrazuje záložní data.
+  Spusť <code>node server.js</code> v terminálu ve složce kde máš soubory,
+  pak otevři <code>http://localhost:3000</code> v prohlížeči pro reálná GTFS data.
+</div>
+
+<!-- MAIN CONTENT -->
+<main id="mainContent">
+  <div class="state-screen" id="welcomeScreen">
+    <div class="state-icon">🚌</div>
+    <div class="state-title">Odjezdová tabule DPMB Brno</div>
+    <div class="state-sub">Zadejte název zastávky do vyhledávacího pole výše a stiskněte Enter nebo vyberte ze seznamu.</div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span class="footer-info">DPMB – Digitální odjezdová tabule &copy; 2025 | Data: IDS JMK / DPMB</span>
+  <span class="footer-info">Automatická obnova každých 30 s</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const REFRESH_INTERVAL = 30000; // 30 s
+const LOCAL_API = 'http://localhost:3000/api';
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentStop = null;
+let refreshTimer = null;
+let progressTimer = null;
+let progressStart = null;
+let departures = [];
+let gtfsMode = false; // true = real GTFS data
+
+// ═══════════════════════════════════════════════════════
+// GTFS TYPE DETECTION
+// ═══════════════════════════════════════════════════════
+function guessType(line, routeType) {
+  // GTFS route_type: 0=tram, 3=bus, 11=trol, 800=trol
+  if (routeType === 0  || routeType === '0')  return 'tram';
+  if (routeType === 11 || routeType === '11') return 'trol';
+  if (routeType === 800|| routeType === '800')return 'trol';
+  const l = String(line);
+  if (l.startsWith('N')) return 'night';
+  const n = parseInt(l);
+  if (n >= 1  && n <= 20) return 'tram';
+  if (n >= 25 && n <= 39) return 'trol';
+  return 'bus';
+}
+
+// ═══════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('cs-CZ', { hour12: false });
+  const d = now.toLocaleDateString('cs-CZ', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+  document.getElementById('clockTime').textContent = t;
+  document.getElementById('clockDate').textContent = d.toUpperCase();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════
+// REFRESH PROGRESS BAR
+// ═══════════════════════════════════════════════════════
+function startProgressBar() {
+  const fill = document.getElementById('refreshFill');
+  progressStart = Date.now();
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${REFRESH_INTERVAL}ms linear`;
+    fill.style.width = '100%';
+  });
+}
+
+function updateRefreshLabel(remaining) {
+  const lbl = document.getElementById('refreshLabel');
+  if (lbl) lbl.textContent = `Obnoví se za ${Math.ceil(remaining/1000)} s`;
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETE FROM SERVER
+// ═══════════════════════════════════════════════════════
+async function fetchStopSuggestions(query) {
+  try {
+    const resp = await fetch(`${LOCAL_API}/stops?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(3000) });
+    if (!resp.ok) throw new Error('no server');
+    return await resp.json(); // [{id, name}, ...]
+  } catch {
+    // fallback: filter hardcoded list
+    const q = query.toLowerCase();
+    return FALLBACK_STOPS.filter(s => s.name.toLowerCase().includes(q)).slice(0, 10);
+  }
+}
+
+// Small fallback list if server not running
+const FALLBACK_STOPS = [
+  { name: 'Hlavní nádraží' }, { name: 'Česká' }, { name: 'Náměstí Svobody' },
+  { name: 'Mendlovo náměstí' }, { name: 'Konečného náměstí' }, { name: 'Moravské náměstí' },
+  { name: 'Husova' }, { name: 'Joštova' }, { name: 'Tivoli' }, { name: 'Úzká' },
+  { name: 'Komárov' }, { name: 'Vídeňská' }, { name: 'Bohunice' }, { name: 'Bystrc' },
+  { name: 'Líšeň' }, { name: 'Královo Pole' }, { name: 'Řečkovice' }, { name: 'Lesná' },
+  { name: 'Slatina' }, { name: 'Starý Lískovec' }, { name: 'Nový Lískovec' },
+  { name: 'Technologický park' }, { name: 'Semilasso' }, { name: 'Cejl' }, { name: 'Bratislavská' },
+];
+
+// ═══════════════════════════════════════════════════════
+// FETCH DATA
+// ═══════════════════════════════════════════════════════
+async function fetchDepartures(stop) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot loading';
+
+  try {
+    const resp = await fetch(
+      `${LOCAL_API}/departures?stop=${encodeURIComponent(stop.name)}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    gtfsMode = true;
+    dot.className = 'status-dot';
+    document.getElementById('corsNotice').classList.remove('show');
+    return parseGTFSResponse(data);
+  } catch (e) {
+    gtfsMode = false;
+    dot.className = 'status-dot error';
+    document.getElementById('corsNotice').classList.add('show');
+    return generateFallbackDepartures(stop.name);
+  }
+}
+
+function parseGTFSResponse(data) {
+  const now = new Date();
+  return (data.departures || []).map(d => {
+    const depTime = new Date(now);
+    depTime.setHours(Math.floor(d.depMin / 60), d.depMin % 60, 0, 0);
+    // Handle >24h times (GTFS allows e.g. 25:00)
+    if (d.depMin >= 24 * 60) depTime.setDate(depTime.getDate() + 1);
+    return {
+      line: d.line,
+      dest: d.dest,
+      type: guessType(d.line, d.routeType),
+      depTime,
+      minsLeft: d.minsLeft,
+    };
+  });
+}
+
+function generateFallbackDepartures(stopName) {
+  // Minimal fallback simulation
+  const now = new Date();
+  const lines = [
+    { line:'1', dest:'Řečkovice', type:'tram' },
+    { line:'2', dest:'Starý Lískovec', type:'tram' },
+    { line:'4', dest:'Lesná', type:'tram' },
+    { line:'44', dest:'Modřice', type:'bus' },
+    { line:'30', dest:'Bystrc', type:'trol' },
+  ];
+  const deps = [];
+  lines.forEach(r => {
+    let offset = Math.floor(Math.random() * 5);
+    for (let i = 0; i < 3; i++) {
+      deps.push({ ...r, depTime: new Date(now.getTime() + offset * 60000), minsLeft: offset });
+      offset += Math.floor(Math.random() * 8) + 4;
+    }
+  });
+  return deps.sort((a, b) => a.depTime - b.depTime).slice(0, 16);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderDepartures(deps, stopName) {
+  const main = document.getElementById('mainContent');
+
+  if (!deps || deps.length === 0) {
+    main.innerHTML = `
+      <div class="state-screen">
+        <div class="state-icon">🚫</div>
+        <div class="state-title">Žádné odjezdy</div>
+        <div class="state-sub">Pro zastávku <strong>${stopName}</strong> nebyly nalezeny žádné aktuální odjezdy.</div>
+      </div>`;
+    return;
+  }
+
+  let html = `
+    <div class="table-header">
+      <span class="col-header">Linka</span>
+      <span class="col-header">Směr</span>
+      <span class="col-header" style="text-align:right">Odjezd</span>
+    </div>
+    <div class="departures-list">`;
+
+  const now = new Date();
+
+  deps.forEach((dep, i) => {
+    const mins = Math.round((dep.depTime - now) / 60000);
+    let timeHtml, timeClass;
+
+    if (mins <= 0) {
+      timeHtml = '&#x25BA;&nbsp;ODJÍŽDÍ';
+      timeClass = 'time-cell time-now';
+    } else if (mins <= 2) {
+      timeHtml = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      timeClass = 'time-cell time-soon';
+    } else {
+      timeHtml = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      timeClass = 'time-cell time-normal';
+    }
+
+    const lineClass = `line-num line-${dep.type}`;
+    const delay = (i * 0.05).toFixed(2);
+
+    html += `
+      <div class="departure-row" style="animation-delay:${delay}s">
+        <div class="${lineClass}">${dep.line}</div>
+        <div class="destination" title="${dep.dest}">${dep.dest}</div>
+        <div class="${timeClass}">${timeHtml}</div>
+      </div>`;
+  });
+
+  html += `</div>`;
+  if (!gtfsMode) {
+    html += `<div style="padding:8px 20px;font-size:0.6rem;color:#4a2a00;letter-spacing:1px">
+      ◈ ZÁLOŽNÍ DATA – Spusť server.js pro načtení reálných jízdních řádů GTFS
+    </div>`;
+  }
+
+  main.innerHTML = html;
+}
+
+function updateCountdowns() {
+  if (!currentStop || departures.length === 0) return;
+  const now = new Date();
+  const cells = document.querySelectorAll('.time-cell');
+  cells.forEach((cell, i) => {
+    if (i >= departures.length) return;
+    const dep = departures[i];
+    const mins = Math.round((dep.depTime - now) / 60000);
+    if (mins <= 0) {
+      cell.innerHTML = '&#x25BA;&nbsp;ODJÍŽDÍ';
+      cell.className = 'time-cell time-now';
+    } else if (mins <= 2) {
+      cell.innerHTML = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      cell.className = 'time-cell time-soon';
+    } else {
+      cell.innerHTML = `${mins}&nbsp;<small style="font-size:0.6rem;letter-spacing:1px">MIN</small>`;
+      cell.className = 'time-cell time-normal';
+    }
+  });
+
+  // remove rows that are way past
+  departures = departures.filter(d => Math.round((d.depTime - now) / 60000) > -2);
+}
+setInterval(updateCountdowns, 10000);
+
+// ═══════════════════════════════════════════════════════
+// LOAD STOP
+// ═══════════════════════════════════════════════════════
+async function loadStop(stop) {
+  currentStop = stop;
+
+  // show banner
+  document.getElementById('stationBanner').style.display = 'flex';
+  document.getElementById('stationNameDisplay').textContent = stop.name;
+  document.getElementById('stopInput').value = stop.name;
+
+  // loading state
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="state-screen">
+      <div class="state-icon">📡</div>
+      <div class="state-title">Načítám odjezdy…</div>
+      <div class="loading-bar"></div>
+      <div class="state-sub">${stop.name}</div>
+    </div>`;
+
+  departures = await fetchDepartures(stop);
+  renderDepartures(departures, stop.name);
+
+  // clear old timer
+  clearInterval(refreshTimer);
+  startProgressBar();
+
+  let elapsed = 0;
+  const step = 1000;
+  refreshTimer = setInterval(async () => {
+    elapsed += step;
+    const remaining = REFRESH_INTERVAL - elapsed;
+    updateRefreshLabel(remaining);
+    if (elapsed >= REFRESH_INTERVAL) {
+      elapsed = 0;
+      startProgressBar();
+      departures = await fetchDepartures(currentStop);
+      renderDepartures(departures, currentStop.name);
+    }
+  }, step);
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════
+const stopInput = document.getElementById('stopInput');
+const autoList  = document.getElementById('autocompleteList');
+let acIndex = -1;
+let acItems = [];
+
+stopInput.addEventListener('input', async () => {
+  const val = stopInput.value.trim();
+  autoList.innerHTML = '';
+  acIndex = -1;
+  if (val.length < 2) { autoList.classList.remove('open'); return; }
+
+  acItems = await fetchStopSuggestions(val);
+  if (acItems.length === 0) { autoList.classList.remove('open'); return; }
+
+  acItems.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'autocomplete-item';
+    div.textContent = s.name;
+    div.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      selectStop(s);
+    });
+    autoList.appendChild(div);
+  });
+  autoList.classList.add('open');
+});
+
+stopInput.addEventListener('keydown', (e) => {
+  const items = autoList.querySelectorAll('.autocomplete-item');
+  if (e.key === 'ArrowDown') {
+    acIndex = Math.min(acIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    acIndex = Math.max(acIndex - 1, -1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    if (acIndex >= 0 && acItems[acIndex]) {
+      selectStop(acItems[acIndex]);
+    } else {
+      // fuzzy match
+      const val = stopInput.value.trim().toLowerCase();
+      const match = BRNO_STOPS.find(s => s.name.toLowerCase().includes(val));
+      if (match) selectStop(match);
+      else if (val.length > 2) {
+        // create ad-hoc stop from input
+        selectStop({ name: stopInput.value.trim(), id: 'UNKNOWN' });
+      }
+    }
+  } else if (e.key === 'Escape') {
+    autoList.classList.remove('open');
+  }
+});
+
+stopInput.addEventListener('blur', () => {
+  setTimeout(() => autoList.classList.remove('open'), 150);
+});
+
+function selectStop(stop) {
+  stopInput.value = stop.name;
+  autoList.classList.remove('open');
+  acIndex = -1;
+  loadStop(stop);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT – auto-load Hlavní nádraží
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => loadStop({ name: 'Hlavní nádraží' }), 300);
+});
+</script>
+</body>
+</html>
